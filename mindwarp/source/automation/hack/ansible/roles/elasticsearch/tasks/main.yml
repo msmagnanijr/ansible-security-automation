@@ -1,0 +1,96 @@
+---
+- name: add elasticsearch repo
+  become: yes
+  become_method: sudo
+  yum_repository:
+    name: elasticsearch
+    description: elasticsearch repository for 7.x packages
+    baseurl: https://artifacts.elastic.co/packages/7.x/yum
+    gpgcheck: no
+    enabled: yes
+
+- name: install elasticsearch
+  become: yes
+  become_method: sudo
+  dnf:
+    name: elasticsearch
+    state: latest
+
+- name: "enable elasticsearch service"
+  become: yes
+  become_method: sudo
+  service:
+    name: elasticsearch
+    enabled: yes
+
+# - name: disable firewalld for test
+#   become: yes
+#   become_method: sudo
+#   systemd:
+#     name: firewalld
+#     state: stopped
+#     daemon_reload: yes
+#     enabled: no
+
+- name: updating the config file to allow outside access
+  become: yes
+  become_method: sudo
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'network.host:'
+    line: 'network.host: 0.0.0.0'
+
+- name: updating the port in config file
+  become: yes
+  become_method: sudo
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'http.port:'
+    line: 'http.port: 9200'
+
+- name: updating the discory type in config file
+  become: yes
+  become_method: sudo
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    line: 'discovery.type: single-node'
+
+- name: enable security in config file
+  become: yes
+  become_method: sudo
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    line: 'xpack.security.enabled: true'
+
+- name: enable monitoring in config file
+  become: yes
+  become_method: sudo
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    line: 'xpack.monitoring.collection.enabled: true'
+
+
+# - name: enable trial self-generated license
+#   become: yes
+#   become_method: sudo
+#   lineinfile:
+#     destfile: /etc/elasticsearch/elasticsearch.yml
+#     line: 'xpack.license.self_generated.type: true'
+
+- name: set anonymous access
+  become: yes
+  become_method: sudo
+  blockinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    block: |
+      xpack.security.authc:
+        anonymous:
+          username: anonymous_user
+          roles: superuser
+
+- name: start elasticsearch service
+  become: yes
+  become_method: sudo
+  service:
+    name: elasticsearch
+    state: started

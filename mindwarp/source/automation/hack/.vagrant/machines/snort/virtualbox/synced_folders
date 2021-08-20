@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"/home/mmagnani/Workspace/fiap/fiap-mba-cyber-security/mindwarp/source/automation/hack","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}

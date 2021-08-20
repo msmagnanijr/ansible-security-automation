@@ -1,0 +1,52 @@
+---
+- name: add elasticsearch repo to install logstash
+  become: yes
+  become_method: sudo
+  yum_repository:
+    name: elasticsearch
+    description: elasticsearch repository for 7.x packages
+    baseurl: https://artifacts.elastic.co/packages/7.x/yum
+    gpgcheck: no
+    enabled: yes
+
+- name: install logstash
+  become: yes
+  become_method: sudo
+  yum:
+    name: logstash
+    state: latest
+
+- name: configure snort3 json source
+  become: yes
+  become_method: sudo
+  template:
+    src: snort_json.conf.j2
+    dest: /etc/logstash/conf.d/snort_json.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: configure snort3 apps source
+  become: yes
+  become_method: sudo
+  template:
+    src: snort_apps.conf.j2
+    dest: /etc/logstash/conf.d/snort_apps.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: enable logstash service
+  become: yes
+  become_method: sudo
+  systemd:
+    name: logstash
+    enabled: yes
+
+- name: start logstash service
+  become: yes
+  become_method: sudo
+  systemd:
+    name: logstash
+    state: started
+    daemon_reload: yes

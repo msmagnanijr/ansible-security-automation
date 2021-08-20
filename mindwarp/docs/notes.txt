@@ -1,0 +1,6 @@
+https://www.usessionbuddy.com/post/How-To-Install-And-Configure-Snort-NIDS-On-CentOS-8/
+https://www.rapid7.com/blog/post/2017/01/11/how-to-install-snort-nids-on-ubuntu-linux/
+https://liquidat.wordpress.com/2020/04/09/getting-started-with-ansible-security-automation-investigation-enrichment/
+https://kifarunix.com/install-and-configure-snort-3-nids-on-ubuntu-20-04/
+
+https://blog.aghanim.net/index.php/2020/10/08/visualize-snort3-logs-in-kibana-using-logstash-and-elasticsearch/

@@ -1,0 +1,175 @@
+---
+- name: install dnf-plugins-core
+  become: yes
+  become_method: sudo
+  dnf:
+    name: "dnf-plugins-core"
+    state: latest
+
+- name: enable epel repository on centos 8
+  become: yes
+  become_method: sudo
+  dnf:
+    name: epel-release
+    state: latest
+
+- name: enable power tools repository on centos 8
+  become: yes
+  become_method: sudo
+  command: dnf config-manager --set-enabled powertools
+  args:
+    warn: false
+
+- name: full system update
+  become: yes
+  become_method: sudo
+  dnf:
+    name: "*"
+    state: latest
+
+- name: install required dependencies
+  become: yes
+  become_method: sudo
+  dnf:
+    name:
+    - flex
+    - bison
+    - gcc
+    - gcc-c++
+    - make
+    - cmake
+    - autoconf
+    - libtool
+    - git
+    - vim
+    - nano
+    - unzip
+    - wget
+    - libpcap-devel
+    - pcre-devel
+    - libdnet-devel
+    - hwloc-devel
+    - openssl-devel
+    - zlib-devel
+    - luajit-devel
+    - pkgconfig
+    - libnfnetlink-devel
+    - libnetfilter_queue-devel
+    - libmnl-devel
+    - lzma
+    - xz-devel
+
+- name: create workspace dir
+  become: yes
+  become_method: sudo
+  file:
+    path: ~/workspace
+    state: directory
+
+- name: download and unarchive LibDAQ
+  become: yes
+  become_method: sudo
+  unarchive:
+    src: https://github.com/snort3/libdaq/archive/refs/tags/v3.0.4.tar.gz
+    dest: ~/workspace
+    remote_src: yes
+
+- name: compile and install LibDAQ
+  become: yes
+  become_method: sudo
+  command: sudo {{ item }} chdir="~/workspace/libdaq-3.0.4"
+  with_items:
+    - ./bootstrap
+    - ./configure
+    - make
+    - make install
+  args:
+    warn: false
+
+- name: download and unarchive OpenAppId
+  become: yes
+  become_method: sudo
+  unarchive:
+    src: https://www.snort.org/downloads/openappid/17843
+    dest: ~/workspace
+    remote_src: yes
+
+- name: copy OpenAppId to the right place
+  become: yes
+  become_method: sudo
+  copy:
+    src: ~/workspace/odp
+    dest: /usr/local/lib/
+    remote_src: yes
+
+- name: download and unarchive Snort3
+  become: yes
+  become_method: sudo
+  unarchive:
+    src: https://github.com/snort3/snort3/archive/refs/tags/3.1.10.0.tar.gz
+    dest: ~/workspace
+    remote_src: yes
+
+- name: export needed variables
+  become: yes
+  become_method: sudo
+  shell: "{{ item }}"
+  with_items:
+    - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+    - export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig:$PKG_CONFIG_PATH
+
+- name: compile Snort3
+  become: yes
+  become_method: sudo
+  command: sudo {{ item }} chdir="~/workspace/snort3-3.1.10.0"
+  with_items:
+    - ./configure_cmake.sh --prefix=/usr/local/snort
+  args:
+    warn: false
+
+- name: install Snort3
+  become: yes
+  become_method: sudo
+  command: sudo {{ item }} chdir="~/workspace/snort3-3.1.10.0/build"
+  with_items:
+    - make
+    - make install
+    - ldconfig
+  args:
+    warn: false
+
+- name: create a symlink to the Snort3 binary
+  become: yes
+  become_method: sudo
+  file:
+    src: "/usr/local/snort/bin/snort"
+    dest: "/usr/sbin/snort"
+    state: link
+
+- name: create a symlink to the libdaq binary
+  become: yes
+  become_method: sudo
+  shell: ln -s /usr/local/lib/libdaq.so.3 /lib/
+
+- name: create Snort3 log dir
+  become: yes
+  become_method: sudo
+  file:
+    path: /var/log/snort
+    state: directory
+  args:
+    warn: false
+
+# - name: configure Snort3 service
+#   become: yes
+#   become_method: sudo
+#   template:
+#     src: snort3.service.j2
+#     dest: /etc/systemd/system/snort3.service
+
+# - name: start Snort3 service
+#   become: yes
+#   become_method: sudo
+#   service:
+#     name: snort3
+#     state: started

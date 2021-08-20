@@ -1,0 +1,69 @@
+Vagrant.configure("2") do |config|
+
+    config.vm.define "snort" do |snort|
+        snort.vm.box = "centos/8"
+        snort.vm.hostname = "snort"
+
+        snort.vm.network :public_network, ip: "10.0.0.170", bridge: "wlp0s20f3"
+
+        snort.vm.provider :virtualbox do |v|
+            v.customize ["modifyvm", :id, "--memory", 4096]
+            v.customize ["modifyvm", :id, "--name", "snort"]
+            v.customize ['modifyvm', :id, '--nicpromisc1', 'allow-all', '--nicpromisc2', 'allow-all']
+        end
+
+        snort.vm.provision :ansible do |ansible|
+            ansible.playbook = "ansible/playbook-snort3.yml"
+        end
+    end
+
+    config.vm.define "elasticsearch" do |elasticsearch|
+        elasticsearch.vm.box = "centos/8"
+        elasticsearch.vm.hostname = "elasticsearch"
+
+        elasticsearch.vm.network :public_network, ip: "10.0.0.172", bridge: "wlp0s20f3"
+
+        elasticsearch.vm.provider :virtualbox do |v|
+            v.customize ["modifyvm", :id, "--memory", 4096]
+            v.customize ["modifyvm", :id, "--name", "elasticsearch"]
+        end
+
+        elasticsearch.vm.provision :ansible do |ansible|
+            ansible.playbook = "ansible/playbook-elasticsearch.yml"
+        end
+    end
+
+    config.vm.define "grafana" do |grafana|
+        grafana.vm.box = "centos/8"
+        grafana.vm.hostname = "grafana"
+
+        grafana.vm.network :public_network, ip: "10.0.0.173", bridge: "wlp0s20f3"
+
+        grafana.vm.provider :virtualbox do |v|
+            v.customize ["modifyvm", :id, "--memory", 4096]
+            v.customize ["modifyvm", :id, "--name", "grafana"]
+        end
+
+        grafana.vm.provision :ansible do |ansible|
+            ansible.playbook = "ansible/playbook-grafana.yml"
+        end
+    end
+
+    config.vm.define "webserver" do |webserver|
+        webserver.vm.box = "ubuntu/impish64"
+        webserver.vm.hostname = 'webserver'
+
+        webserver.vm.network :public_network, ip: "10.0.0.175", bridge: "wlp0s20f3"
+
+        webserver.vm.provider :virtualbox do |v|
+            v.customize ["modifyvm", :id, "--memory", 4096]
+            v.customize ["modifyvm", :id, "--name", "webserver"]
+        end
+
+        webserver.vm.provision :ansible do |ansible|
+            ansible.playbook = "ansible/playbook-webserver.yml"
+        end
+
+    end
+
+end

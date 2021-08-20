@@ -1,0 +1,96 @@
+---
+- name: define the location of the OpenAppID libraries
+  become: yes
+  become_method: sudo
+  replace:
+    path: /usr/local/snort/etc/snort/snort.lua
+    regexp: "--app_detector_dir = 'directory to load appid detectors from'"
+    replace: "app_detector_dir = '/usr/local/lib',"
+
+- name: update OpenAppID properties
+  become: yes
+  become_method: sudo
+  lineinfile:
+    path: /usr/local/snort/etc/snort/snort.lua
+    line: "log_stats = true,"
+    insertafter: "app_detector_dir = '/usr/local/lib',"
+
+- name: enable Snort3 alert_json
+  become: yes
+  become_method: sudo
+  lineinfile:
+    path: /usr/local/snort/etc/snort/snort.lua
+    line: "
+    alert_json =
+    {
+        file = true,
+        limit = 100,
+        fields = 'seconds action class b64_data dir dst_addr dst_ap dst_port eth_dst eth_len eth_src eth_type gid icmp_code icmp_id icmp_seq icmp_type iface ip_id ip_len msg mpls pkt_gen pkt_len pkt_num priority proto rev rule service sid src_addr src_ap src_port target tcp_ack tcp_flags tcp_len tcp_seq tcp_win tos ttl udp_len vlan timestamp',
+    }"
+    insertafter: "--file_log = { }"
+
+- name: "configure addresses to protect"
+  become: yes
+  become_method: sudo
+  replace:
+    path: /usr/local/snort/etc/snort/snort.lua
+    regexp: "HOME_NET = 'any'"
+    replace: "HOME_NET = '10.0.0.175'"
+
+- name: "enable the Snort3 community rules"
+  become: yes
+  become_method: sudo
+  replace:
+    path: /usr/local/snort/etc/snort/snort.lua
+    regexp: "--include = 'snort3-community.rules'"
+    replace: "include = 'snort3-community.rules'"
+
+- name: "enable the alert_fast plugins to log the output "
+  become: yes
+  become_method: sudo
+  replace:
+    path: /usr/local/snort/etc/snort/snort.lua
+    regexp: "--alert_fast = { }"
+    replace: "alert_fast = { file = true }"
+
+- name: download and unarchive Snort3 community rules
+  become: yes
+  become_method: sudo
+  unarchive:
+    src: https://snort.org/downloads/community/snort3-community-rules.tar.gz
+    dest: ~/workspace
+    remote_src: yes
+
+- name: copy Snort3 community rules to the right place
+  become: yes
+  become_method: sudo
+  copy:
+    src: ~/workspace/snort3-community-rules/snort3-community.rules
+    dest: /usr/local/snort/etc/snort/snort3-community.rules
+    remote_src: yes
+
+- name: add Snort3 ICMP rules
+  become: yes
+  become_method: sudo
+  lineinfile:
+    path: /usr/local/snort/etc/snort/snort3-community.rules
+    line: alert icmp any any -> $HOME_NET any (msg:"ICMP connection attempt"; sid:1000002; rev:1;)
+    insertafter: EOF
+
+- name: add Snort3 HTTP rules
+  become: yes
+  become_method: sudo
+  lineinfile:
+    path: /usr/local/snort/etc/snort/snort3-community.rules
+    line: alert tcp any any -> $HOME_NET 80 (msg:"TELNET connection attempt"; sid:1000003; rev:1;)
+    insertafter: EOF
+
+- name: update the shared libraries
+  become: yes
+  become_method: sudo
+  shell: ldconfig
+
+- name: validate Snort3 configuration
+  become: yes
+  become_method: sudo
+  shell: snort -T -c /usr/local/snort/etc/snort/snort.lua --daq-dir /usr/local/lib/daq/ -l /var/log/snort/snort.log

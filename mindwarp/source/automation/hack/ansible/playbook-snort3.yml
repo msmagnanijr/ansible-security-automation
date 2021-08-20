@@ -1,0 +1,6 @@
+---
+- hosts: all
+  roles:
+    - role: snort3
+    - role: snort3_rules
+    - role: logstash
